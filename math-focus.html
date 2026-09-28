@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Math Focus — a quiet calculation game</title>
+  <style>
+    :root {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #253431;
+      background: #f6f7f4;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible {
+      outline: 3px solid #7ba79b;
+      outline-offset: 3px;
+    }
+    [hidden] { display: none !important; }
+
+    .page { max-width: 1010px; margin: 0 auto; padding: 52px 24px 48px; }
+    header { margin-bottom: 36px; }
+    .eyebrow {
+      color: #668078;
+      font-size: .76rem;
+      font-weight: 750;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h1 { font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: -.05em; margin: 7px 0 5px; }
+    .subtitle { color: #62716b; margin: 0; line-height: 1.5; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(260px, 1fr); gap: 20px; align-items: start; }
+    .card {
+      background: #fff;
+      border: 1px solid #e5ebe6;
+      border-radius: 18px;
+      box-shadow: 0 8px 28px rgb(35 58 49 / 4%);
+    }
+    .main-card { padding: clamp(24px, 4vw, 38px); min-height: 420px; }
+    .aside { padding: 26px; }
+    h2 { font-size: 1.2rem; letter-spacing: -.02em; margin: 0 0 8px; }
+    .muted { color: #64736d; line-height: 1.55; font-size: .94rem; }
+    .intro { margin: 0 0 27px; }
+    .field-label { display: block; font-size: .88rem; font-weight: 700; margin-bottom: 10px; }
+    .name-input, .answer-input {
+      background: #fff;
+      color: #253431;
+      border: 1px solid #cbd8d0;
+      border-radius: 10px;
+    }
+    .name-input { width: 100%; height: 48px; padding: 0 14px; }
+    .field { margin-bottom: 24px; }
+    .choices { display: flex; flex-wrap: wrap; gap: 8px; }
+    .choice {
+      border: 1px solid #d8e2dc;
+      border-radius: 10px;
+      background: #fff;
+      color: #394e47;
+      padding: 11px 16px;
+      font-weight: 650;
+      transition: background-color .15s ease, border-color .15s ease;
+    }
+    .choice:hover { background: #f1f6f2; }
+    .choice[aria-pressed="true"] { background: #e6f0e9; border-color: #8eac9b; color: #254f41; }
+    .button {
+      border: 1px solid #2d6151;
+      border-radius: 10px;
+      background: #2d6151;
+      color: #fff;
+      padding: 13px 21px;
+      font-weight: 700;
+      min-height: 47px;
+    }
+    .button:hover { background: #244d40; }
+    .button-secondary { background: #fff; color: #315749; border-color: #cbd8d0; }
+    .button-secondary:hover { background: #f1f6f2; }
+    .button-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .note { color: #738179; font-size: .83rem; line-height: 1.5; }
+    .form-message { color: #a2473e; min-height: 1.5em; margin: 8px 0 0; font-size: .9rem; }
+
+    .game-heading { display: flex; justify-content: space-between; align-items: start; gap: 15px; }
+    .game-mode { margin: 0; font-weight: 700; color: #536e61; }
+    .leave {
+      background: none;
+      color: #5e6c66;
+      border: 0;
+      padding: 3px 0;
+      font-size: .88rem;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .stats { display: flex; gap: clamp(20px, 5vw, 55px); margin: 29px 0 18px; }
+    .stat-label { font-size: .8rem; color: #6e7b74; margin-bottom: 3px; }
+    .stat-value { font-size: 1.45rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .progress { height: 6px; border-radius: 99px; background: #e9f0ea; overflow: hidden; }
+    .progress-fill { width: 0; height: 100%; background: #76a38b; }
+    .problem-caption { margin: 45px 0 4px; color: #6b7771; font-size: .88rem; }
+    .question {
+      font-size: clamp(3rem, 8vw, 5.1rem);
+      font-weight: 720;
+      letter-spacing: -.055em;
+      line-height: 1.18;
+      font-variant-numeric: tabular-nums;
+      margin: 0 0 30px;
+      overflow-wrap: anywhere;
+    }
+    .answer-label { display: block; font-size: .88rem; font-weight: 700; margin-bottom: 10px; }
+    .answer-row { display: flex; gap: 10px; }
+    .answer-input { min-width: 0; width: 100%; max-width: 240px; height: 55px; padding: 0 16px; font-size: 1.45rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .answer-row .button { min-height: 55px; }
+    .feedback { min-height: 1.6em; margin: 12px 0 0; color: #a2473e; font-size: .91rem; }
+
+    .result-badge { display: inline-block; padding: 7px 11px; border-radius: 7px; background: #e9f2eb; color: #345947; font-size: .83rem; font-weight: 700; margin-bottom: 18px; }
+    .result-big { font-size: clamp(2.25rem, 5vw, 3.8rem); letter-spacing: -.055em; margin: 20px 0 5px; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .result-subtitle { margin: 0 0 24px; }
+    .result-actions { margin-top: 35px; }
+    .leaderboard-title { margin: 0; }
+    .leaderboard-context { margin: 3px 0 19px; font-size: .88rem; color: #6e7b74; }
+    .leaderboard-list { list-style: none; padding: 0; margin: 0; }
+    .leaderboard-list li { display: grid; grid-template-columns: 25px minmax(0, 1fr) auto; gap: 9px; align-items: baseline; border-top: 1px solid #edf0ed; padding: 13px 0; font-size: .92rem; }
+    .rank { color: #819087; font-size: .82rem; font-variant-numeric: tabular-nums; }
+    .player { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
+    .score { font-variant-numeric: tabular-nums; text-align: right; font-weight: 700; }
+    .score small { display: block; color: #819087; font-weight: 400; font-size: .72rem; margin-top: 2px; }
+    .empty { border-top: 1px solid #edf0ed; margin: 0; padding: 20px 0 6px; color: #7b8880; font-size: .89rem; }
+    .aside-note { border-top: 1px solid #edf0ed; padding-top: 18px; margin: 15px 0 0; }
+    footer { margin-top: 22px; }
+
+    @media (max-width: 710px) {
+      .page { padding: 28px 16px 40px; }
+      header { margin-bottom: 24px; }
+      .layout { grid-template-columns: 1fr; }
+      .main-card { min-height: 0; }
+      .problem-caption { margin-top: 34px; }
+    }
+    @media (max-width: 420px) {
+      .answer-row { flex-direction: column; align-items: stretch; }
+      .answer-input { max-width: none; }
+      .question { font-size: clamp(2.5rem, 11vw, 3.5rem); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .choice { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="eyebrow">A little practice, every day</div>
+      <h1>Math Focus</h1>
+      <p class="subtitle">A calm space for quick calculations. Just you, the question, and the clock.</p>
+    </header>
+
+    <main class="layout">
+      <div class="card main-card">
+        <section id="setup-screen" aria-labelledby="setup-title">
+          <h2 id="setup-title">Set up your session</h2>
+          <p class="muted intro">Addition and subtraction with numbers up to 1,000; multiplication with numbers up to 100. Subtraction answers are never negative.</p>
+          <form id="setup-form">
+            <div class="field">
+              <label class="field-label" for="player-name">Player name</label>
+              <input class="name-input" id="player-name" name="player" type="text" maxlength="24" autocomplete="nickname" placeholder="Enter your name" required>
+            </div>
+            <div class="field">
+              <span class="field-label" id="mode-label">Choose a mode</span>
+              <div class="choices" role="group" aria-labelledby="mode-label">
+                <button class="choice" type="button" data-mode="timed" aria-pressed="true">Beat the clock</button>
+                <button class="choice" type="button" data-mode="fixed" aria-pressed="false">Finish the set</button>
+              </div>
+            </div>
+            <div class="field" id="timed-options">
+              <span class="field-label" id="timed-label">Time limit</span>
+              <div class="choices" role="group" aria-labelledby="timed-label">
+                <button class="choice" type="button" data-duration="5" aria-pressed="true">5 min</button>
+                <button class="choice" type="button" data-duration="10" aria-pressed="false">10 min</button>
+                <button class="choice" type="button" data-duration="15" aria-pressed="false">15 min</button>
+              </div>
+              <p class="note">Solve as many as you can. Incorrect answers can be retried.</p>
+            </div>
+            <div class="field" id="fixed-options" hidden>
+              <span class="field-label" id="fixed-label">Number of questions</span>
+              <div class="choices" role="group" aria-labelledby="fixed-label">
+                <button class="choice" type="button" data-count="25" aria-pressed="true">25 questions</button>
+                <button class="choice" type="button" data-count="50" aria-pressed="false">50 questions</button>
+                <button class="choice" type="button" data-count="100" aria-pressed="false">100 questions</button>
+              </div>
+              <p class="note">Complete the set as quickly as you can. Incorrect answers can be retried.</p>
+            </div>
+            <button class="button" type="submit">Start session</button>
+            <p class="form-message" id="setup-message" role="alert"></p>
+          </form>
+        </section>
+
+        <section id="game-screen" aria-label="Current session" hidden>
+          <div class="game-heading">
+            <p class="game-mode" id="game-mode"></p>
+            <button class="leave" id="leave-button" type="button">Leave session</button>
+          </div>
+          <div class="stats">
+            <div><div class="stat-label" id="time-label">Time left</div><div class="stat-value" id="time-value">05:00</div></div>
+            <div><div class="stat-label" id="count-label">Solved</div><div class="stat-value" id="count-value">0</div></div>
+          </div>
+          <div class="progress" role="progressbar" id="game-progress" aria-label="Session progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill" id="progress-fill"></div></div>
+          <p class="problem-caption">Calculate</p>
+          <p class="question" id="question"></p>
+          <form id="answer-form" autocomplete="off">
+            <label class="answer-label" for="answer">Your answer</label>
+            <div class="answer-row">
+              <input class="answer-input" id="answer" type="text" inputmode="numeric" enterkeyhint="done" spellcheck="false" aria-describedby="answer-feedback" autocomplete="off">
+              <button class="button" type="submit">Submit ↵</button>
+            </div>
+            <p class="feedback" id="answer-feedback" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <section id="result-screen" aria-labelledby="result-title" hidden>
+          <span class="result-badge" id="result-badge">Session complete</span>
+          <h2 id="result-title" tabindex="-1">Nice work, <span id="result-player"></span>.</h2>
+          <div class="result-big" id="result-value"></div>
+          <p class="muted result-subtitle" id="result-description"></p>
+          <p class="muted" id="result-misses"></p>
+          <div class="button-row result-actions">
+            <button class="button" id="again-button" type="button">Play again</button>
+            <button class="button button-secondary" id="settings-button" type="button">Change settings</button>
+          </div>
+        </section>
+      </div>
+
+      <aside class="card aside" aria-labelledby="leaderboard-title">
+        <h2 class="leaderboard-title" id="leaderboard-title">Leaderboard</h2>
+        <p class="leaderboard-context" id="leaderboard-context"></p>
+        <ol class="leaderboard-list" id="leaderboard-list"></ol>
+        <p class="empty" id="leaderboard-empty" hidden>No completed sessions yet. Your first result will appear here.</p>
+        <p class="note aside-note" id="storage-note">Scores and your name are saved only in this browser on this device. Nothing is sent anywhere.</p>
+      </aside>
+    </main>
+    <footer class="note">Tip: press Enter to submit. A wrong answer stays on screen so you can try again.</footer>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const storageKey = "math-focus-leaderboards-v1";
+      const nameKey = "math-focus-player-v1";
+      const $ = (id) => document.getElementById(id);
+      const state = { mode: "timed", duration: 5, count: 25, session: null, timer: null };
+      let leaderboards = {};
+      let canStore = true;
+
+      try {
+        const stored = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        if (stored && typeof stored === "object" && !Array.isArray(stored)) {
+          leaderboards = stored;
+        }
+        $("player-name").value = localStorage.getItem(nameKey) || "";
+        localStorage.setItem(storageKey, JSON.stringify(leaderboards));
+      } catch {
+        canStore = false;
+        $("storage-note").textContent = "Local storage is unavailable. Scores last only until this page is closed; nothing is sent anywhere.";
+      }
+
+      function save() {
+        if (!canStore) return;
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(leaderboards));
+          localStorage.setItem(nameKey, $("player-name").value.trim());
+        } catch {
+          canStore = false;
+          $("storage-note").textContent = "Local storage is unavailable. Scores last only until this page is closed; nothing is sent anywhere.";
+        }
+      }
+
+      function settingKey() {
+        return state.mode === "timed" ? `timed:${state.duration}` : `fixed:${state.count}`;
+      }
+
+      function setScreen(screen) {
+        for (const name of ["setup", "game", "result"]) {
+          $(`${name}-screen`).hidden = name !== screen;
+        }
+      }
+
+      function syncChoices() {
+        document.querySelectorAll("[data-mode]").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.mode === state.mode));
+        });
+        document.querySelectorAll("[data-duration]").forEach((button) => {
+          button.setAttribute("aria-pressed", String(Number(button.dataset.duration) === state.duration));
+        });
+        document.querySelectorAll("[data-count]").forEach((button) => {
+          button.setAttribute("aria-pressed", String(Number(button.dataset.count) === state.count));
+        });
+        $("timed-options").hidden = state.mode !== "timed";
+        $("fixed-options").hidden = state.mode !== "fixed";
+        renderLeaderboard();
+      }
+
+      function formatTime(milliseconds, tenths = false) {
+        const units = tenths ? Math.floor(milliseconds / 100) : Math.ceil(milliseconds / 1000);
+        const minutes = Math.floor(units / (tenths ? 600 : 60));
+        const seconds = Math.floor(units / (tenths ? 10 : 1)) % 60;
+        const base = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+        return tenths ? `${base}.${units % 10}` : base;
+      }
+
+      function renderLeaderboard() {
+        const timed = state.mode === "timed";
+        $("leaderboard-context").textContent = timed
+          ? `${state.duration} minutes · most correct answers`
+          : `${state.count} questions · fastest finish`;
+        const list = $("leaderboard-list");
+        list.replaceChildren();
+        const entries = Array.isArray(leaderboards[settingKey()])
+          ? leaderboards[settingKey()].slice(0, 10) : [];
+        $("leaderboard-empty").hidden = entries.length > 0;
+
+        entries.forEach((entry, index) => {
+          const row = document.createElement("li");
+          const rank = document.createElement("span");
+          const player = document.createElement("span");
+          const score = document.createElement("span");
+          const detail = document.createElement("small");
+          rank.className = "rank";
+          player.className = "player";
+          score.className = "score";
+          rank.textContent = `${index + 1}.`;
+          player.textContent = typeof entry.name === "string" ? entry.name : "Player";
+          score.textContent = timed ? `${Number(entry.correct) || 0} solved` : formatTime(Number(entry.elapsedMs) || 0, true);
+          detail.textContent = `${Number(entry.misses) || 0} incorrect`;
+          score.append(detail);
+          row.append(rank, player, score);
+          list.append(row);
+        });
+      }
+
+      function randomNumber(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function makeQuestion(previous) {
+        let question;
+        do {
+          const operator = ["+", "−", "×"][randomNumber(0, 2)];
+          let left;
+          let right;
+          let answer;
+          if (operator === "×") {
+            left = randomNumber(1, 100);
+            right = randomNumber(1, 100);
+            answer = left * right;
+          } else {
+            left = randomNumber(0, 1000);
+            right = randomNumber(0, 1000);
+            if (operator === "−" && right > left) [left, right] = [right, left];
+            answer = operator === "+" ? left + right : left - right;
+          }
+          question = { text: `${left.toLocaleString("en-US")} ${operator} ${right.toLocaleString("en-US")} = ?`, answer };
+        } while (previous && question.text === previous.text);
+        return question;
+      }
+
+      function showQuestion() {
+        const session = state.session;
+        session.question = makeQuestion(session.question);
+        $("question").textContent = session.question.text;
+        $("answer").value = "";
+        $("answer").removeAttribute("aria-invalid");
+        $("answer-feedback").textContent = "";
+        $("answer").focus();
+      }
+
+      function tick() {
+        const session = state.session;
+        if (!session) return;
+        const elapsed = Math.max(0, Date.now() - session.startedAt);
+        if (session.mode === "timed" && elapsed >= session.limitMs) {
+          finishSession(session.limitMs);
+          return;
+        }
+        $("time-value").textContent = session.mode === "timed"
+          ? formatTime(session.limitMs - elapsed)
+          : formatTime(elapsed, true);
+        const progress = session.mode === "timed"
+          ? Math.min(100, elapsed / session.limitMs * 100)
+          : Math.min(100, session.correct / session.target * 100);
+        $("progress-fill").style.width = `${progress}%`;
+        $("game-progress").setAttribute("aria-valuenow", String(Math.floor(progress)));
+      }
+
+      function startSession() {
+        const name = $("player-name").value.trim().replace(/\s+/g, " ");
+        if (!name) {
+          $("setup-message").textContent = "Enter a player name to begin.";
+          $("player-name").focus();
+          return;
+        }
+        $("player-name").value = name;
+        $("setup-message").textContent = "";
+        save();
+        state.session = {
+          mode: state.mode,
+          name,
+          correct: 0,
+          misses: 0,
+          startedAt: Date.now(),
+          limitMs: state.duration * 60_000,
+          target: state.count,
+          question: null
+        };
+        $("game-mode").textContent = state.mode === "timed"
+          ? `${state.duration}-minute challenge`
+          : `${state.count}-question challenge`;
+        $("time-label").textContent = state.mode === "timed" ? "Time left" : "Elapsed";
+        $("count-label").textContent = state.mode === "timed" ? "Solved" : "Completed";
+        $("count-value").textContent = state.mode === "timed" ? "0" : `0 / ${state.count}`;
+        setScreen("game");
+        showQuestion();
+        tick();
+        state.timer = setInterval(tick, 100);
+      }
+
+      function finishSession(elapsedMs) {
+        const session = state.session;
+        if (!session) return;
+        clearInterval(state.timer);
+        state.timer = null;
+        state.session = null;
+        const timed = session.mode === "timed";
+        const entry = {
+          name: session.name,
+          correct: session.correct,
+          misses: session.misses,
+          elapsedMs,
+          recordedAt: Date.now()
+        };
+        const key = timed ? `timed:${session.limitMs / 60_000}` : `fixed:${session.target}`;
+        const entries = Array.isArray(leaderboards[key]) ? leaderboards[key] : [];
+        entries.push(entry);
+        entries.sort((a, b) => timed
+          ? (b.correct - a.correct || a.misses - b.misses || a.recordedAt - b.recordedAt)
+          : (a.elapsedMs - b.elapsedMs || a.misses - b.misses || a.recordedAt - b.recordedAt));
+        leaderboards[key] = entries.slice(0, 10);
+        save();
+
+        $("result-badge").textContent = timed ? "Time is up" : "Set complete";
+        $("result-player").textContent = session.name;
+        $("result-value").textContent = timed
+          ? `${session.correct} ${session.correct === 1 ? "problem" : "problems"} solved`
+          : formatTime(elapsedMs, true);
+        $("result-description").textContent = timed
+          ? `Correct answers in ${session.limitMs / 60_000} minutes.`
+          : `Time to finish ${session.target} questions.`;
+        $("result-misses").textContent = `${session.misses} incorrect ${session.misses === 1 ? "attempt" : "attempts"}.`;
+        setScreen("result");
+        renderLeaderboard();
+        $("result-title").focus();
+      }
+
+      document.querySelectorAll("[data-mode], [data-duration], [data-count]").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.mode) state.mode = button.dataset.mode;
+          if (button.dataset.duration) state.duration = Number(button.dataset.duration);
+          if (button.dataset.count) state.count = Number(button.dataset.count);
+          syncChoices();
+        });
+      });
+
+      $("setup-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        startSession();
+      });
+
+      $("answer-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const session = state.session;
+        if (!session) return;
+        if (session.mode === "timed" && Date.now() - session.startedAt >= session.limitMs) {
+          finishSession(session.limitMs);
+          return;
+        }
+        const raw = $("answer").value.trim();
+        if (!/^(?:\d+|\d{1,3}(?:,\d{3})+)$/.test(raw)) {
+          $("answer-feedback").textContent = "Type a whole number, then press Enter.";
+          $("answer").setAttribute("aria-invalid", "true");
+          $("answer").focus();
+          return;
+        }
+        if (Number(raw.replace(/,/g, "")) !== session.question.answer) {
+          session.misses++;
+          $("answer-feedback").textContent = "Not quite. Try this one again.";
+          $("answer").setAttribute("aria-invalid", "true");
+          $("answer").select();
+          return;
+        }
+        session.correct++;
+        $("count-value").textContent = session.mode === "timed"
+          ? String(session.correct)
+          : `${session.correct} / ${session.target}`;
+        if (session.mode === "fixed" && session.correct === session.target) {
+          finishSession(Math.max(0, Date.now() - session.startedAt));
+          return;
+        }
+        showQuestion();
+        tick();
+      });
+
+      $("leave-button").addEventListener("click", () => {
+        if (!state.session || !window.confirm("Leave this session? Unfinished sessions are not saved.")) return;
+        clearInterval(state.timer);
+        state.timer = null;
+        state.session = null;
+        setScreen("setup");
+        $("player-name").focus();
+      });
+
+      $("again-button").addEventListener("click", startSession);
+      $("settings-button").addEventListener("click", () => {
+        setScreen("setup");
+        $("player-name").focus();
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) tick();
+      });
+      syncChoices();
+    })();
+  </script>
+</body>
+</html>
